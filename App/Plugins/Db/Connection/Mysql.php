@@ -9,6 +9,6 @@ class Mysql extends Connection {
      * @return string
      */
     public function getDsn(): string {
-        return 'mysql:host=' . $this->getHost() . ';dbname=' . $this->getDbName();
+        return 'mysql:host=' . $this->getHost() . ';dbname=' . $this->getDbName() . ';charset=utf8';
     }
 }

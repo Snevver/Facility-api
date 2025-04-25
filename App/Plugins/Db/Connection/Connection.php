@@ -47,7 +47,7 @@ abstract class Connection implements IConnection {
     public function getDbName(): string {
         return $this->dbName;
     }
-
+    
     /**
      * Function to get the username
      * @return string
@@ -55,7 +55,7 @@ abstract class Connection implements IConnection {
     public function getUsername(): string {
         return $this->username;
     }
-
+    
     /**
      * Function to get the password
      * @return string

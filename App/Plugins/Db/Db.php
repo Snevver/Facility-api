@@ -80,13 +80,20 @@ class Db implements IDb {
      */
     private function connect(IConnection $connectionImplementation) {
         try {
+            $dsn = $connectionImplementation->getDsn();
+            // If you need to specify the port, do it correctly:
+            $dsn .= ';port=3307';
+            
             return new PDO(
-                $connectionImplementation->getDsn(),
+                $dsn,
                 $connectionImplementation->getUsername(),
                 $connectionImplementation->getPassword(),
+                [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                ]
             );
         } catch (PDOException $e) {
-            // Just throw it:
             throw $e;
         }
     }
