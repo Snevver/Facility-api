@@ -26,3 +26,4 @@ try {
     // For debugging purposes, throw the initial exception:
     throw $e;
 }
+

@@ -81,7 +81,6 @@ class Db implements IDb {
     private function connect(IConnection $connectionImplementation) {
         try {
             $dsn = $connectionImplementation->getDsn();
-            // If you need to specify the port, do it correctly:
             $dsn .= ';port=3307';
             
             return new PDO(
