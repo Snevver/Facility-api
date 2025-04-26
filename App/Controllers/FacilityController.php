@@ -223,4 +223,51 @@ class FacilityController extends BaseController {
             (new \App\Plugins\Http\Response\InternalServerError(['message' => 'An error occurred: ' . $e->getMessage()]))->send();
         }
     }
+
+    /**
+     * Search for facilities.
+     * You can fill in the parameter in Postman:)
+     * For example, fill "search" in for the key and "Amsterdam" in for the value.
+     * This will return all facilities with "Amsterdam" anywhere in their retrieved data.
+     * 
+     * In the assessment, you guys told me to be able to search for multiple parameters at once, but i can't figure out how to do that.
+     * @return void
+     */
+    public function searchFacility() {
+        // Once again, I used AI to help me with the search query.
+        try {
+            $query = "SELECT facilities.*, 
+                             locations.city, locations.address, locations.zip_code, locations.country_code, locations.phone_number,
+                             GROUP_CONCAT(tags.name) AS tags
+                      FROM facilities
+                      JOIN locations ON facilities.location_id = locations.id
+                      LEFT JOIN facility_tags ON facilities.id = facility_tags.facility_id
+                      LEFT JOIN tags ON facility_tags.tag_id = tags.id";
+    
+            $searchTerm = $_GET['search'] ?? null;
+            if ($searchTerm) {
+                $query .= " WHERE facilities.name LIKE :search
+                            OR tags.name LIKE :search
+                            OR locations.city LIKE :search
+                            OR locations.phone_number LIKE :search
+                            OR locations.zip_code LIKE :search
+                            OR locations.address LIKE :search
+                            GROUP BY facilities.id";
+                $this->db->executeQuery($query, ['search' => '%' . $searchTerm . '%']);
+            } else {
+                $query .= " GROUP BY facilities.id";
+                $this->db->executeQuery($query);
+            }
+    
+            $facilities = $this->db->getStatement()->fetchAll();
+    
+            if (!empty($facilities)) {
+                (new \App\Plugins\Http\Response\Ok($facilities))->send();
+            } else {
+                (new \App\Plugins\Http\Response\NotFound(['message' => 'No facilities found']))->send();
+            }
+        } catch (\Exception $e) {
+            (new \App\Plugins\Http\Response\InternalServerError(['message' => 'An error occurred: ' . $e->getMessage()]))->send();
+        }
+    }
 }

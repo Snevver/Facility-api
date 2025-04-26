@@ -10,3 +10,4 @@ $router->get('/facility/{id}', App\Controllers\FacilityController::class . '@get
 $router->post('/create', App\Controllers\FacilityController::class . '@createFacility');
 $router->put('/edit/{id}', App\Controllers\FacilityController::class . '@editFacility');
 $router->delete('/delete/{id}', App\Controllers\FacilityController::class . '@deleteFacility');
+$router->get('/search', App\Controllers\FacilityController::class . '@searchFacility');
