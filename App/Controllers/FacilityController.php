@@ -2,74 +2,26 @@
 
 namespace App\Controllers;
 
+use App\Services\FacilityService;
+use App\Services\ValidationService;
+
 class FacilityController extends BaseController {
+    private $facilityService;
+    private $validationService;
 
-    /**
-     * Helper function to fetch facilities from the database.
-     * @param int|null $id Facility ID (optional).
-     */
-    private function fetchFacilities($id = null) {
-        // I used AI to help me with this query since it was a bit complex and I wanted to make sure I got it right.
-        $query = "SELECT facilities.*, 
-                         locations.city, locations.address, locations.zip_code, locations.country_code, locations.phone_number,
-                         GROUP_CONCAT(tags.name) AS tags
-                  FROM facilities
-                  JOIN locations ON facilities.location_id = locations.id
-                  LEFT JOIN facility_tags ON facilities.id = facility_tags.facility_id
-                  LEFT JOIN tags ON facility_tags.tag_id = tags.id";
-    
-        if ($id !== null) {
-            $query .= " WHERE facilities.id = :id GROUP BY facilities.id";
-            $this->db->executeQuery($query, ['id' => $id]);
-        } else {
-            $query .= " GROUP BY facilities.id";
-            $this->db->executeQuery($query);
-        }
-    
-        return $this->db->getStatement()->fetchAll();
+    public function __construct() {
+        $db = $this->db;
+        
+        $this->facilityService = new FacilityService($db);
+        $this->validationService = new ValidationService($db);
     }
 
     /**
-     * Helper function to update facility tags in the database.
-     * @param int $facility_id Facility ID.
-     * @param array $tags_id Array of tag IDs.
-     */
-    private function updateTags($facility_id, $tags_id) {
-        $query = "DELETE FROM facility_tags WHERE facility_id = :facility_id";
-        $this->db->executeQuery($query, ['facility_id' => $facility_id]);
-    
-        if (!empty($tags_id) && is_array($tags_id)) {
-            foreach ($tags_id as $tag_id) {
-                if (!is_numeric($tag_id)) {
-                    continue;
-                }
-
-                // Check if the tag exists
-                $query = "SELECT COUNT(*) FROM tags WHERE id = :tag_id";
-                $this->db->executeQuery($query, ['tag_id' => $tag_id]);
-                $count = $this->db->getStatement()->fetchColumn();
-                if ($count == 0) {
-                    (new \App\Plugins\Http\Response\BadRequest(['message' => 'Tag ID ' . $tag_id . ' does not exist']))->send();
-                    return;
-                }
-    
-                $query = "INSERT INTO facility_tags (facility_id, tag_id) VALUES (:facility_id, :tag_id)";
-                $this->db->executeQuery($query, [
-                    'facility_id' => $facility_id,
-                    'tag_id' => $tag_id,
-                ]);
-            }
-        }
-    }
-
-    /**
-     * Get a specific facility by ID.
-     * @param int $id Facility ID.
-     * @return void
-     */
+    * Get all facilities.
+    */
     public function getAllFacilities() {
         try {
-            $facilities = $this->fetchFacilities();
+            $facilities = $this->facilityService->fetchFacilities();
 
             if (!empty($facilities)) {
                 (new \App\Plugins\Http\Response\Ok($facilities))->send();
@@ -82,14 +34,13 @@ class FacilityController extends BaseController {
     }
 
     /**
-     * Get a specific facility by ID.
-     * @param int $id Facility ID.
-     * @return void
-     */
+    * Get a specific facility by ID.
+    * @param int $id Facility ID.
+    */
     public function getFacility($id) {
         try {
-            $facility = $this->fetchFacilities($id);
-    
+            $facility = $this->facilityService->fetchFacilities($id);
+
             if (!empty($facility)) {
                 (new \App\Plugins\Http\Response\Ok($facility[0]))->send();
             } else {
@@ -101,66 +52,30 @@ class FacilityController extends BaseController {
     }
 
     /**
-     * Create a new facility.
-     * Fill in the new data in the request body in Postman:)
-     * Example body: 
-     * {
-     *    "name": "New Facility Name", 
-     *    "location_id": 2,
-     *    "tags_id": [1, 2]
-     * }
-     * I feel like this method could be improbved a bit, but I wanted to keep it simple and easy to understand.
-     * @param int $id Facility ID.
-     * @return void
-     */
+    * Create a new facility.
+    */
     public function createFacility() {
         try {
             $input = file_get_contents('php://input');
             $data = json_decode($input, true);
-    
+
             if (empty($data['name']) || empty($data['location_id'])) {
                 (new \App\Plugins\Http\Response\BadRequest(['message' => 'Name and location_id are required fields']))->send();
                 return;
             }
-            
+
             // Validate location_id
-            $query = "SELECT COUNT(*) FROM locations WHERE id = :location_id";
-            $this->db->executeQuery($query, ['location_id' => $data['location_id']]);
-            $locationExists = $this->db->getStatement()->fetchColumn();
-            if ($locationExists == 0) {
-                (new \App\Plugins\Http\Response\BadRequest(['message' => 'Location ID ' . $data['location_id'] . ' does not exist']))->send();
-                return;
+            $this->validationService->validateLocation($data['location_id']);
+
+            // Validate tags_id (if provided)
+            if (!empty($data['tags_id']) && is_array($data['tags_id'])) {
+                $this->validationService->validateTags($data['tags_id']);
             }
 
-            // Validate tags_id (If provided)
-            if (!empty($data['tags_id']) && is_array($data['tags_id'])) {
-                foreach ($data['tags_id'] as $tag_id) {
-                    if (!is_numeric($tag_id)) {
-                        (new \App\Plugins\Http\Response\BadRequest(['message' => 'Invalid tag ID: ' . $tag_id]))->send();
-                        return;
-                    }
-    
-                    // Check if the tag exists in the database
-                    $query = "SELECT COUNT(*) FROM tags WHERE id = :tag_id";
-                    $this->db->executeQuery($query, ['tag_id' => $tag_id]);
-                    $count = $this->db->getStatement()->fetchColumn();
-                    if ($count == 0) {
-                        (new \App\Plugins\Http\Response\BadRequest(['message' => 'Tag ID ' . $tag_id . ' does not exist']))->send();
-                        return;
-                    }
-                }
-            }
-    
-            // Insert the facility into the database
-            $query = "INSERT INTO facilities (name, location_id, creation_date) VALUES (:name, :location_id, NOW())";
-            $this->db->executeQuery($query, [
-                'name' => $data['name'],
-                'location_id' => $data['location_id'],
-            ]);
-    
-            $facility_id = $this->db->getLastInsertedId();
-            $this->updateTags($facility_id, $data['tags_id'] ?? []);
-    
+            // Create the facility
+            $facility_id = $this->facilityService->createFacility($data['name'], $data['location_id']);
+            $this->facilityService->updateTags($facility_id, $data['tags_id'] ?? []);
+
             (new \App\Plugins\Http\Response\Created(['message' => 'Facility created successfully']))->send();
         } catch (\Exception $e) {
             (new \App\Plugins\Http\Response\InternalServerError(['message' => 'An error occurred: ' . $e->getMessage()]))->send();
@@ -168,30 +83,28 @@ class FacilityController extends BaseController {
     }
 
     /**
-     * Update a facility by ID.
-     * @param int $id Facility ID.
-     * @return void
-     */
+    * Update a facility by ID.
+    * @param int $id Facility ID.
+    */
     public function editFacility($id) {
         try {
             $input = file_get_contents('php://input');
             $data = json_decode($input, true);
-    
+
             if (empty($data['name']) || empty($data['location_id'])) {
                 (new \App\Plugins\Http\Response\BadRequest(['message' => 'Name and location_id are required fields']))->send();
                 return;
             }
-    
-            $query = "UPDATE facilities SET name = :name, location_id = :location_id WHERE id = :id";
-            $this->db->executeQuery($query, [
-                'name' => $data['name'],
-                'location_id' => $data['location_id'],
-                'id' => $id,
-            ]);
-    
-            if ($this->db->getStatement()->rowCount() > 0) {
-                $this->updateTags($id, $data['tags_id'] ?? []);
-    
+
+            // Validate tags_id (if provided)
+            if (!empty($data['tags_id']) && is_array($data['tags_id'])) {
+                $this->validationService->validateTags($data['tags_id']);
+            }
+
+            // Update the facility
+            $updated = $this->facilityService->updateFacility($id, $data['name'], $data['location_id']);
+            if ($updated) {
+                $this->facilityService->updateTags($id, $data['tags_id'] ?? []);
                 (new \App\Plugins\Http\Response\Ok(['message' => 'Facility updated successfully']))->send();
             } else {
                 (new \App\Plugins\Http\Response\NotFound(['message' => 'Facility not found']))->send();
@@ -202,19 +115,14 @@ class FacilityController extends BaseController {
     }
 
     /**
-     * Delete a facility by ID.
-     * @param int $id Facility ID.
-     * @return void
-     */
+    * Delete a facility by ID.
+    * @param int $id Facility ID.
+    */
     public function deleteFacility($id) {
         try {
-            $query = "DELETE FROM facility_tags WHERE facility_id = :facility_id";
-            $this->db->executeQuery($query, ['facility_id' => $id]);
-    
-            $query = "DELETE FROM facilities WHERE id = :id";
-            $this->db->executeQuery($query, ['id' => $id]);
-    
-            if ($this->db->getStatement()->rowCount() > 0) {
+            $deleted = $this->facilityService->deleteFacility($id);
+
+            if ($deleted) {
                 (new \App\Plugins\Http\Response\Ok(['message' => 'Facility deleted successfully']))->send();
             } else {
                 (new \App\Plugins\Http\Response\NotFound(['message' => 'Facility not found']))->send();
@@ -225,42 +133,12 @@ class FacilityController extends BaseController {
     }
 
     /**
-     * Search for facilities.
-     * You can fill in the parameter in Postman:)
-     * For example, fill "search" in for the key and "Amsterdam" in for the value.
-     * This will return all facilities with "Amsterdam" anywhere in their retrieved data.
-     * 
-     * In the assessment, you guys told me to be able to search for multiple parameters at once, but i can't figure out how to do that.
-     * @return void
-     */
+    * Search for facilities.
+    */
     public function searchFacility() {
-        // Once again, I used AI to help me with the search query.
         try {
-            $query = "SELECT facilities.*, 
-                             locations.city, locations.address, locations.zip_code, locations.country_code, locations.phone_number,
-                             GROUP_CONCAT(tags.name) AS tags
-                      FROM facilities
-                      JOIN locations ON facilities.location_id = locations.id
-                      LEFT JOIN facility_tags ON facilities.id = facility_tags.facility_id
-                      LEFT JOIN tags ON facility_tags.tag_id = tags.id";
-    
-            $searchTerm = $_GET['search'] ?? null;
-            if ($searchTerm) {
-                $query .= " WHERE facilities.name LIKE :search
-                            OR tags.name LIKE :search
-                            OR locations.city LIKE :search
-                            OR locations.phone_number LIKE :search
-                            OR locations.zip_code LIKE :search
-                            OR locations.address LIKE :search
-                            GROUP BY facilities.id";
-                $this->db->executeQuery($query, ['search' => '%' . $searchTerm . '%']);
-            } else {
-                $query .= " GROUP BY facilities.id";
-                $this->db->executeQuery($query);
-            }
-    
-            $facilities = $this->db->getStatement()->fetchAll();
-    
+            $facilities = $this->facilityService->searchFacilities($_GET);
+
             if (!empty($facilities)) {
                 (new \App\Plugins\Http\Response\Ok($facilities))->send();
             } else {
