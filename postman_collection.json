@@ -8,6 +8,24 @@
 	},
 	"item": [
 		{
+			"name": "Test API",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/test",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"test"
+					]
+				},
+				"description": "API call used to test local development environment and database connection.\n\nShould print _'Hello World!'_ if all is OK."
+			},
+			"response": []
+		},
+		{
 			"name": "Get all facilities",
 			"request": {
 				"method": "GET",
@@ -139,7 +157,7 @@
 	"variable": [
 		{
 			"key": "baseUrl",
-			"value": "http://php.web/DTT%20assessment/web_backend_test_catering_api/",
+			"value": "http://php.web/DTT_assessment/web_backend_test_catering_api",
 			"type": "string"
 		}
 	]
