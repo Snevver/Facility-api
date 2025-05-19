@@ -157,7 +157,6 @@ class FacilityController extends BaseController {
         try {
             $facilities = $this->facilityService->searchFacilities($_GET);
 
-            // Convert tags from comma-separated string to array
             foreach ($facilities as &$facility) {
                 if (isset($facility['tags'])) {
                     $facility['tags'] = $facility['tags'] !== null && $facility['tags'] !== ''
