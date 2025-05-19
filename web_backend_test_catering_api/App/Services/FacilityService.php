@@ -82,25 +82,7 @@ class FacilityService {
         return $this->db->getStatement()->rowCount() > 0;
     }
 
-    /**
-     * Helper function to update facility tags in the database.
-     * @param int $facility_id Facility ID.
-     * @param array $tags_id Array of tag IDs.
-     */
-    public function updateTags($facility_id, $tags_id) {
-        $query = "DELETE FROM facility_tags WHERE facility_id = :facility_id";
-        $this->db->executeQuery($query, ['facility_id' => $facility_id]);
 
-        if (!empty($tags_id) && is_array($tags_id)) {
-            foreach ($tags_id as $tag_id) {
-                $query = "INSERT INTO facility_tags (facility_id, tag_id) VALUES (:facility_id, :tag_id)";
-                $this->db->executeQuery($query, [
-                    'facility_id' => $facility_id,
-                    'tag_id' => $tag_id,
-                ]);
-            }
-        }
-    }
 
     /**
      * Search for facilities by facility name, tags, location, or any combination of those.
@@ -110,7 +92,7 @@ class FacilityService {
     public function searchFacilities($filters) {
         $query = "SELECT facilities.*, 
                         locations.city, locations.address, locations.zip_code, locations.country_code, locations.phone_number,
-                        GROUP_CONCAT(tags.name) AS tags
+                        GROUP_CONCAT(DISTINCT tags.name) AS tags
                 FROM facilities
                 JOIN locations ON facilities.location_id = locations.id
                 LEFT JOIN facility_tags ON facilities.id = facility_tags.facility_id
@@ -128,7 +110,7 @@ class FacilityService {
             $parameters['name'] = '%' . $filters['name'] . '%';
         }
         if (!empty($filters['tag'])) {
-            $conditions[] = "tags.name LIKE :tag";
+            $conditions[] = "facilities.id IN (SELECT facility_tags.facility_id FROM facility_tags JOIN tags t2 ON facility_tags.tag_id = t2.id WHERE t2.name LIKE :tag)";
             $parameters['tag'] = '%' . $filters['tag'] . '%';
         }
 

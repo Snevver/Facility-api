@@ -4,16 +4,19 @@ namespace App\Controllers;
 
 use App\Services\FacilityService;
 use App\Services\ValidationService;
+use App\Services\TagService;
 
 class FacilityController extends BaseController {
     private $facilityService;
     private $validationService;
+    private $tagService;
 
     public function __construct() {
         $db = $this->db;
         
         $this->facilityService = new FacilityService($db);
         $this->validationService = new ValidationService($db);
+        $this->tagService = new TagService($db);
     }
 
     /**
@@ -89,7 +92,7 @@ class FacilityController extends BaseController {
 
             // Create the facility
             $facility_id = $this->facilityService->createFacility($data['name'], $data['location_id']);
-            $this->facilityService->updateTags($facility_id, $data['tags_id'] ?? []);
+            $this->tagService->updateTags($facility_id, $data['tags_id'] ?? []);
 
             (new \App\Plugins\Http\Response\Created(['message' => 'Facility created successfully']))->send();
         } catch (\Exception $e) {
@@ -119,7 +122,7 @@ class FacilityController extends BaseController {
             // Update the facility
             $updated = $this->facilityService->updateFacility($id, $data['name'], $data['location_id']);
             if ($updated) {
-                $this->facilityService->updateTags($id, $data['tags_id'] ?? []);
+                $this->tagService->updateTags($id, $data['tags_id'] ?? []);
                 (new \App\Plugins\Http\Response\Ok(['message' => 'Facility updated successfully']))->send();
             } else {
                 (new \App\Plugins\Http\Response\NotFound(['message' => 'Facility not found']))->send();
@@ -153,6 +156,15 @@ class FacilityController extends BaseController {
     public function searchFacility() {
         try {
             $facilities = $this->facilityService->searchFacilities($_GET);
+
+            // Convert tags from comma-separated string to array
+            foreach ($facilities as &$facility) {
+                if (isset($facility['tags'])) {
+                    $facility['tags'] = $facility['tags'] !== null && $facility['tags'] !== ''
+                        ? explode(',', $facility['tags'])
+                        : [];
+                }
+            }
 
             if (!empty($facilities)) {
                 (new \App\Plugins\Http\Response\Ok($facilities))->send();
