@@ -21,6 +21,19 @@ class FacilityController extends BaseController {
 
     /**
     * Get all facilities.
+    *
+    * @route GET /facilities
+    * @return 200 OK - List of all facilities
+    * @response
+    * [
+    *   {
+    *     "id": 1,
+    *     "name": "Facility Name",
+    *     "location_id": 2,
+    *     "tags": ["tag1", "tag2"]
+    *   },
+    *   ...
+    * ]
     */
     public function getAllFacilities() {
         try {
@@ -47,14 +60,25 @@ class FacilityController extends BaseController {
 
     /**
     * Get a specific facility by ID.
-    * @param int $id Facility ID.
+    *
+    * @route GET /facility/{id}
+    * @param int $id Facility ID (required)
+    * @return 200 OK - Facility object
+    * @response
+    * {
+    *   "id": 1,
+    *   "name": "Facility Name",
+    *   "location_id": 2,
+    *   "tags": ["tag1", "tag2"]
+    * }
     */
     public function getFacility($id) {
         try {
+            $this->validationService->validateFacilityId($id);
+
             $facility = $this->facilityService->fetchFacilities($id);
 
             if (!empty($facility)) {
-                // Convert tags from comma-separated string to array
                 if (isset($facility[0]['tags'])) {
                     $facility[0]['tags'] = $facility[0]['tags'] !== null && $facility[0]['tags'] !== ''
                         ? explode(',', $facility[0]['tags'])
@@ -71,6 +95,21 @@ class FacilityController extends BaseController {
 
     /**
     * Create a new facility.
+    *
+    * @route POST /create
+    * @bodyParam name string required The name of the facility.
+    * @bodyParam location_id int required The location ID.
+    * @bodyParam tags string[] optional Array of tag names.
+    * @example {
+    *   "name": "New Facility",
+    *   "location_id": 1,
+    *   "tags": ["Food", "Catering"]
+    * }
+    * @return 201 Created - Facility created successfully
+    * @response
+    * {
+    *   "message": "Facility created successfully"
+    * }
     */
     public function createFacility() {
         try {
@@ -82,17 +121,14 @@ class FacilityController extends BaseController {
                 return;
             }
 
-            // Validate location_id
             $this->validationService->validateLocation($data['location_id']);
 
-            // Validate tags_id (if provided)
-            if (!empty($data['tags_id']) && is_array($data['tags_id'])) {
-                $this->validationService->validateTags($data['tags_id']);
+            if (!empty($data['tags']) && is_array($data['tags'])) {
+                $this->validationService->validateTags($data['tags']);
             }
 
-            // Create the facility
             $facility_id = $this->facilityService->createFacility($data['name'], $data['location_id']);
-            $this->tagService->updateTags($facility_id, $data['tags_id'] ?? []);
+            $this->tagService->updateTags($facility_id, $data['tags'] ?? []);
 
             (new \App\Plugins\Http\Response\Created(['message' => 'Facility created successfully']))->send();
         } catch (\Exception $e) {
@@ -102,10 +138,27 @@ class FacilityController extends BaseController {
 
     /**
     * Update a facility by ID.
-    * @param int $id Facility ID.
+    *
+    * @route PUT /edit/{id}
+    * @param int $id Facility ID (required)
+    * @bodyParam name string required The name of the facility.
+    * @bodyParam location_id int required The location ID.
+    * @bodyParam tags string[] optional Array of tag names.
+    * @example {
+    *   "name": "Updated Facility",
+    *   "location_id": 2,
+    *   "tags": ["Drinks", "Events"]
+    * }
+    * @return 200 OK - Facility updated successfully
+    * @response
+    * {
+    *   "message": "Facility updated successfully"
+    * }
     */
     public function editFacility($id) {
         try {
+            $this->validationService->validateFacilityId($id);
+
             $input = file_get_contents('php://input');
             $data = json_decode($input, true);
 
@@ -114,15 +167,15 @@ class FacilityController extends BaseController {
                 return;
             }
 
-            // Validate tags_id (if provided)
-            if (!empty($data['tags_id']) && is_array($data['tags_id'])) {
-                $this->validationService->validateTags($data['tags_id']);
+            // Validate tags (if provided)
+            if (!empty($data['tags']) && is_array($data['tags'])) {
+                $this->validationService->validateTags($data['tags']);
             }
 
             // Update the facility
             $updated = $this->facilityService->updateFacility($id, $data['name'], $data['location_id']);
             if ($updated) {
-                $this->tagService->updateTags($id, $data['tags_id'] ?? []);
+                $this->tagService->updateTags($id, $data['tags'] ?? []);
                 (new \App\Plugins\Http\Response\Ok(['message' => 'Facility updated successfully']))->send();
             } else {
                 (new \App\Plugins\Http\Response\NotFound(['message' => 'Facility not found']))->send();
@@ -134,10 +187,19 @@ class FacilityController extends BaseController {
 
     /**
     * Delete a facility by ID.
-    * @param int $id Facility ID.
+    *
+    * @route DELETE /delete/{id}
+    * @param int $id Facility ID (required)
+    * @return 200 OK - Facility deleted successfully
+    * @response
+    * {
+    *   "message": "Facility deleted successfully"
+    * }
     */
     public function deleteFacility($id) {
         try {
+            $this->validationService->validateFacilityId($id);
+
             $deleted = $this->facilityService->deleteFacility($id);
 
             if ($deleted) {
@@ -152,6 +214,21 @@ class FacilityController extends BaseController {
 
     /**
     * Search for facilities.
+    *
+    * @route GET /search
+    * @queryParam name string optional Facility name to search for.
+    * @queryParam tag string optional Tag name to filter by.
+    * @queryParam location_id int optional Location ID to filter by.
+    * @return 200 OK - List of matching facilities
+    * @response
+    * [
+    *   {
+    *     "id": 1,
+    *     "name": "Facility Name",
+    *     "location_id": 2,
+    *     "tags": ["tag1", "tag2"]
+    *   },
+    * ]
     */
     public function searchFacility() {
         try {

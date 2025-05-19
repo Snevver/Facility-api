@@ -11,17 +11,12 @@ class ValidationService {
 
     /**
      * Validate the input data for creating or updating a facility.
-     * @param array $tags_id Array of tag IDs.
+     * @param array $tags Array of tag names.
      */
-    public function validateTags($tags_id) {
-        foreach ($tags_id as $tag_id) {
-            if (!is_numeric($tag_id)) {
-                throw new \Exception('Invalid tag ID: ' . $tag_id);
-            }
-            $query = "SELECT COUNT(*) FROM tags WHERE id = :tag_id";
-            $this->db->executeQuery($query, ['tag_id' => $tag_id]);
-            if ($this->db->getStatement()->fetchColumn() == 0) {
-                throw new \Exception('Tag ID ' . $tag_id . ' does not exist');
+    public function validateTags($tags) {
+        foreach ($tags as $tag) {
+            if (!is_string($tag) || trim($tag) === '') {
+                throw new \Exception('Invalid tag name: ' . print_r($tag, true));
             }
         }
     }
@@ -35,6 +30,13 @@ class ValidationService {
         $this->db->executeQuery($query, ['location_id' => $location_id]);
         if ($this->db->getStatement()->fetchColumn() == 0) {
             throw new \Exception('Location ID ' . $location_id . ' does not exist');
+        }
+    }
+
+    public function validateFacilityId($id) {
+        if (empty($id) || !is_numeric($id)) {
+            (new \App\Plugins\Http\Response\BadRequest(['message' => 'Invalid facility ID']))->send();
+            return;
         }
     }
 }

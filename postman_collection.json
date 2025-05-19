@@ -82,9 +82,9 @@
 				},
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"name\": \"New Facility\",\n  \"location_id\": 1,\n  \"tags_id\": [1, 2]\n}"
+					"raw": "{\n  \"name\": \"New Facility\",\n  \"location_id\": 1,\n  \"tags\": [\"Food\", \"Catering\"]\n}"
 				},
-				"description": "Creates a facility. Example body:\n{\n  \"name\": \"New Facility\",\n  \"location_id\": 1,\n  \"tags_id\": [1, 2]\n}"
+				"description": "Creates a facility. Example body:\n{\n  \"name\": \"New Facility\",\n  \"location_id\": 1,\n  \"tags\": [\"Food\", \"Catering\"]\n}"
 			},
 			"response": []
 		},
@@ -109,9 +109,9 @@
 				},
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"name\": \"Updated Facility\",\n  \"location_id\": 2,\n  \"tags_id\": [2, 3]\n}"
+					"raw": "{\n  \"name\": \"Updated Facility\",\n  \"location_id\": 2,\n  \"tags\": [\"Drinks\", \"Events\"]\n}"
 				},
-				"description": "Edit a facility. Example body:\n{\n  \"name\": \"Updated Facility\",\n  \"location_id\": 2,\n  \"tags_id\": [2, 3]\n}"
+				"description": "Edit a facility. Example body:\n{\n  \"name\": \"Updated Facility\",\n  \"location_id\": 2,\n  \"tags\": [\"Drinks\", \"Events\"]\n}"
 			},
 			"response": []
 		},
@@ -139,7 +139,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "{{baseUrl}}/search?location={{id}}",
+					"raw": "{{baseUrl}}/search?city=Amsterdam",
 					"host": [
 						"{{baseUrl}}"
 					],
@@ -148,12 +148,21 @@
 					],
 					"query": [
 						{
-							"key": "location_id",
-							"value": "2"
+							"key": "city",
+							"value": "Amsterdam"
+							
+						},
+						{
+							"key": "tags",
+							"value": "Food"
+						},
+						{
+							"key": "A",
+							"value": "Facility Name"
 						}
 					]
 				},
-				"description": "Search for a facility by name, tags or location. Example: Only facilities from location_id 1 will be shown."
+				"description": "Search for a facility by name, tags or city. Example: Only facilities from city 'Amsterdam' will be shown. Combining multiple search parameters is also possible"
 			},
 			"response": []
 		}
