@@ -23,6 +23,15 @@ class FacilityController extends BaseController {
         try {
             $facilities = $this->facilityService->fetchFacilities();
 
+            // Convert tags from comma-separated string to array
+            foreach ($facilities as &$facility) {
+                if (isset($facility['tags'])) {
+                    $facility['tags'] = $facility['tags'] !== null && $facility['tags'] !== ''
+                        ? explode(',', $facility['tags'])
+                        : [];
+                }
+            }
+
             if (!empty($facilities)) {
                 (new \App\Plugins\Http\Response\Ok($facilities))->send();
             } else {
@@ -42,6 +51,12 @@ class FacilityController extends BaseController {
             $facility = $this->facilityService->fetchFacilities($id);
 
             if (!empty($facility)) {
+                // Convert tags from comma-separated string to array
+                if (isset($facility[0]['tags'])) {
+                    $facility[0]['tags'] = $facility[0]['tags'] !== null && $facility[0]['tags'] !== ''
+                        ? explode(',', $facility[0]['tags'])
+                        : [];
+                }
                 (new \App\Plugins\Http\Response\Ok($facility[0]))->send();
             } else {
                 (new \App\Plugins\Http\Response\NotFound(['message' => 'Facility not found']))->send();

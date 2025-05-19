@@ -71,6 +71,11 @@ class FacilityService {
      * @param int $id Facility ID.
      */
     public function deleteFacility($id) {
+        // Delte the tags first to avoid foreign key constraint errors
+        $query = "DELETE FROM facility_tags WHERE facility_id = :id";
+        $this->db->executeQuery($query, ['id' => $id]);
+
+        // Then delete the facility
         $query = "DELETE FROM facilities WHERE id = :id";
         $this->db->executeQuery($query, ['id' => $id]);
 
@@ -98,11 +103,11 @@ class FacilityService {
     }
 
     /**
-     * Helper function to search for facilities based on filters.
-     * @param array $filters Array of filters (location, city, name, tag, zip_code, phone_number, address, country_code).
+     * Search for facilities by facility name, tags, location, or any combination of those.
+     * @param array $filters
+     * @return array
      */
     public function searchFacilities($filters) {
-        // Once again, I used AI to help me with the search query.
         $query = "SELECT facilities.*, 
                         locations.city, locations.address, locations.zip_code, locations.country_code, locations.phone_number,
                         GROUP_CONCAT(tags.name) AS tags
@@ -114,41 +119,14 @@ class FacilityService {
         $conditions = [];
         $parameters = [];
 
-        if (!empty($filters['location'])) {
-            $conditions[] = "locations.id = :location";
-            $parameters['location'] = $filters['location'];
-        }
-        
         if (!empty($filters['city'])) {
             $conditions[] = "locations.city = :city";
             $parameters['city'] = $filters['city'];
         }
-        
-        if (!empty($filters['zip_code'])) {
-            $conditions[] = "locations.zip_code LIKE :zip_code";
-            $parameters['zip_code'] = '%' . $filters['zip_code'] . '%';
-        }
-        
-        if (!empty($filters['phone_number'])) {
-            $conditions[] = "locations.phone_number LIKE :phone_number";
-            $parameters['phone_number'] = '%' . $filters['phone_number'] . '%';
-        }
-        
-        if (!empty($filters['address'])) {
-            $conditions[] = "locations.address LIKE :address";
-            $parameters['address'] = '%' . $filters['address'] . '%';
-        }
-        
-        if (!empty($filters['country_code'])) {
-            $conditions[] = "locations.country_code = :country_code";
-            $parameters['country_code'] = $filters['country_code'];
-        }
-        
         if (!empty($filters['name'])) {
             $conditions[] = "facilities.name LIKE :name";
             $parameters['name'] = '%' . $filters['name'] . '%';
         }
-        
         if (!empty($filters['tag'])) {
             $conditions[] = "tags.name LIKE :tag";
             $parameters['tag'] = '%' . $filters['tag'] . '%';

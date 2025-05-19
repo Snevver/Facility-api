@@ -31,12 +31,12 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "{{baseUrl}}/facility",
+					"raw": "{{baseUrl}}/facilities",
 					"host": [
 						"{{baseUrl}}"
 					],
 					"path": [
-						"facility"
+						"facilities"
 					]
 				},
 				"description": "Get all facilities."
@@ -49,12 +49,12 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "{{baseUrl}}/facility/{id}",
+					"raw": "{{baseUrl}}/facility/{{id}}",
 					"host": [
 						"{{baseUrl}}"
 					],
 					"path": [
-						"facility/{id}"
+						"facility/{{id}}"
 					]
 				},
 				"description": "Get a specific facility."
@@ -65,7 +65,12 @@
 			"name": "Create facility",
 			"request": {
 				"method": "POST",
-				"header": [],
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
 				"url": {
 					"raw": "{{baseUrl}}/create",
 					"host": [
@@ -75,7 +80,11 @@
 						"create"
 					]
 				},
-				"description": "Creates a facility."
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"New Facility\",\n  \"location_id\": 1,\n  \"tags_id\": [1, 2]\n}"
+				},
+				"description": "Creates a facility. Example body:\n{\n  \"name\": \"New Facility\",\n  \"location_id\": 1,\n  \"tags_id\": [1, 2]\n}"
 			},
 			"response": []
 		},
@@ -83,17 +92,26 @@
 			"name": "Edit a facility",
 			"request": {
 				"method": "PUT",
-				"header": [],
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
 				"url": {
-					"raw": "{{baseUrl}}/edit/{id}",
+					"raw": "{{baseUrl}}/edit/{{id}}",
 					"host": [
 						"{{baseUrl}}"
 					],
 					"path": [
-						"edit/{id}"
+						"edit/{{id}}"
 					]
 				},
-				"description": "Edit a facility."
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Updated Facility\",\n  \"location_id\": 2,\n  \"tags_id\": [2, 3]\n}"
+				},
+				"description": "Edit a facility. Example body:\n{\n  \"name\": \"Updated Facility\",\n  \"location_id\": 2,\n  \"tags_id\": [2, 3]\n}"
 			},
 			"response": []
 		},
@@ -103,12 +121,12 @@
 				"method": "DELETE",
 				"header": [],
 				"url": {
-					"raw": "{{baseUrl}}/delete/{id}",
+					"raw": "{{baseUrl}}/delete/{{id}}",
 					"host": [
 						"{{baseUrl}}"
 					],
 					"path": [
-						"delete/{id}"
+						"delete/{{id}}"
 					]
 				},
 				"description": "Delete a facility."
@@ -121,15 +139,21 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "{{baseUrl}}/search",
+					"raw": "{{baseUrl}}/search?location={{id}}",
 					"host": [
 						"{{baseUrl}}"
 					],
 					"path": [
 						"search"
+					],
+					"query": [
+						{
+							"key": "location_id",
+							"value": "2"
+						}
 					]
 				},
-				"description": "Search for a facility."
+				"description": "Search for a facility by name, tags or location. Example: Only facilities from location_id 1 will be shown."
 			},
 			"response": []
 		}
@@ -158,6 +182,11 @@
 		{
 			"key": "baseUrl",
 			"value": "http://php.web/DTT_assessment/web_backend_test_catering_api",
+			"type": "string"
+		},
+		{
+			"key": "id",
+			"value": "1",
 			"type": "string"
 		}
 	]

@@ -5,6 +5,6 @@ return [
         'host' => 'localhost',
         'database' => 'catering_api',
         'username' => 'root',
-        'password' => 'root',
+        'password' => '',    
     ],
 ];
